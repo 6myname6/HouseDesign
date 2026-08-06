@@ -1,0 +1,54 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: house-design-backend
+  datasource:
+    url: jdbc:mysql://localhost:3306/house_design?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    # 建议使用环境变量注入，避免密钥进入版本库：export DB_PASSWORD=你的密码
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 50MB
+
+# 应用自定义配置
+app:
+  # 文件存储根目录（设计图、生成结果等）
+  storage:
+    location: ./storage
+    # 对外访问的基础 URL（前端通过它拼接可访问的资源地址）
+    public-base-url: http://localhost:8080/files
+  # JWT 配置
+  jwt:
+    # 生产环境务必通过环境变量注入：export JWT_SECRET=一个足够长且随机的字符串
+    secret: ${JWT_SECRET:dev-only-secret-change-me-please-set-env}
+    expiration-ms: 604800000  # 7 天
+  # AI 图生3D 配置
+  ai:
+    # provider: mock（内置降级，无需外部服务）| zhipu（智谱文生写实全景图）| meshy | tripo | custom
+    provider: zhipu
+    # 智谱 BigModel API Key（open.bigmodel.cn），通过环境变量注入：export ZHIPU_API_KEY=你的key
+    api-key: ${ZHIPU_API_KEY}
+    # 智谱文生图接口地址（provider=zhipu 时生效）
+    base-url: "https://open.bigmodel.cn/api/paas/v4"
+    # 文生图模型（cogview-4 质量高 / cogview-3-flash 更快更省 / glm-image）
+    image-model: "cogview-4"
+    # 生成结果轮询超时（秒）
+    timeout-seconds: 300
+
+logging:
+  level:
+    com.housedesign: INFO
