@@ -10,17 +10,20 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * 解析 @CurrentUserId 参数。
+ * 参数解析器：识别带 {@link CurrentUserId} 注解的 Long 参数，
+ * 从请求属性中取出 JWT 拦截器写入的 userId 并注入；未登录则抛 401。
  */
 @Component
 public class CurrentUserIdArgumentResolver implements HandlerMethodArgumentResolver {
 
+    /** 仅支持标注了 @CurrentUserId 且类型为 Long 的参数。 */
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         return parameter.hasParameterAnnotation(CurrentUserId.class)
                 && parameter.getParameterType().equals(Long.class);
     }
 
+    /** 解析参数：从请求属性读取 userId，缺失则视为未登录。 */
     @Override
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
                                   NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {

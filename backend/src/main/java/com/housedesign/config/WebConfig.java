@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 /**
- * Web 配置：跨域 + 静态资源映射 + 鉴权拦截器 + 参数解析器。
+ * Web 层配置：集中配置跨域(CORS)、静态资源映射、JWT 鉴权拦截器与 @CurrentUserId 参数解析器。
  */
 @Configuration
 @RequiredArgsConstructor
@@ -24,6 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
     private final JwtAuthInterceptor jwtAuthInterceptor;
     private final CurrentUserIdArgumentResolver currentUserIdArgumentResolver;
 
+    /** 配置跨域：允许所有来源与常见方法，并允许携带凭据（注意：生产环境应收紧来源）。 */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
@@ -34,6 +35,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .maxAge(3600);
     }
 
+    /** 将 /files/** 映射到本地存储目录，使上传图片可通过 URL 访问。 */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String location = Paths.get(appProperties.getStorage().getLocation())
@@ -42,6 +44,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResourceLocations(location);
     }
 
+    /** 注册 JWT 拦截器：拦截 /api/**，放行登录与注册接口。 */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtAuthInterceptor)
@@ -52,6 +55,7 @@ public class WebConfig implements WebMvcConfigurer {
                 );
     }
 
+    /** 注册 @CurrentUserId 参数解析器，使控制器可直接注入当前登录用户 ID。 */
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
         resolvers.add(currentUserIdArgumentResolver);

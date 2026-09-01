@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * 异步生成处理器（单独 bean，避免 @Async 自调用失效）。
+ * 在独立线程中执行 AI 生成，并更新任务状态。
  */
 @Slf4j
 @Service
@@ -27,6 +28,7 @@ public class GenerationProcessor {
     private final ImageTo3DServiceFactory serviceFactory;
     private final FileStorageService fileStorageService;
 
+    /** 异步执行一次生成：标记 PROCESSING → 调 AI → 写回结果或 FAILED。 */
     @Async("generationExecutor")
     public void process(Long generatedModelId) {
         GeneratedModel model = generatedModelRepository.findById(generatedModelId).orElse(null);

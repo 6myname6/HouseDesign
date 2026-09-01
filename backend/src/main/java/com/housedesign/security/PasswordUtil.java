@@ -6,7 +6,8 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
- * 轻量密码加盐哈希工具（SHA-256 + 随机盐），存储格式 salt$hash。
+ * 轻量密码加盐哈希工具（SHA-256 + 随机盐），存储格式为 {@code salt$hash}。
+ * 注意：生产环境更推荐 BCrypt，此类为项目当前实现。
  */
 public final class PasswordUtil {
 
@@ -15,6 +16,7 @@ public final class PasswordUtil {
     private PasswordUtil() {
     }
 
+    /** 对明文密码加盐哈希，返回 salt$hash 形式的编码串。 */
     public static String encode(String rawPassword) {
         byte[] salt = new byte[16];
         RANDOM.nextBytes(salt);
@@ -23,6 +25,7 @@ public final class PasswordUtil {
         return saltStr + "$" + hash;
     }
 
+    /** 校验明文密码与编码串是否匹配（恒定时间比较，防时序攻击）。 */
     public static boolean matches(String rawPassword, String encoded) {
         if (encoded == null || !encoded.contains("$")) {
             return false;
@@ -32,6 +35,7 @@ public final class PasswordUtil {
         return constantTimeEquals(hash, parts[1]);
     }
 
+    /** 使用盐对明文做 SHA-256 哈希并 Base64 编码。 */
     private static String hash(String raw, String salt) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -43,6 +47,7 @@ public final class PasswordUtil {
         }
     }
 
+    /** 恒定时间比较两字符串，避免因长度/内容差异导致的时间侧信道。 */
     private static boolean constantTimeEquals(String a, String b) {
         if (a.length() != b.length()) {
             return false;

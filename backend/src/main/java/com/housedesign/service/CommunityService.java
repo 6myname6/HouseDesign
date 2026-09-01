@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 装修小圈：帖子、点赞、评论。
+ * 装修小圈业务服务：负责帖子、点赞、评论的增删查与归属校验。
  */
 @Service
 @RequiredArgsConstructor
@@ -29,6 +29,7 @@ public class CommunityService {
     private final PostCommentRepository postCommentRepository;
     private final UserRepository userRepository;
 
+    /** 发布帖子：校验内容与图片不能同时为空，落库后组装响应。 */
     public CommunityDtos.PostResponse create(Long userId, CommunityDtos.CreatePostRequest req) {
         List<String> images = req.getImages() == null ? List.of() : req.getImages();
         String content = req.getContent() == null ? "" : req.getContent().strip();
@@ -46,6 +47,7 @@ public class CommunityService {
         return toResponse(post, users, List.of(), false);
     }
 
+    /** 帖子列表：mine=true 仅当前用户，否则全部；批量补作者信息与当前用户点赞状态。 */
     public List<CommunityDtos.PostResponse> list(Long userId, boolean mine) {
         List<Post> posts = mine
                 ? postRepository.findByUserIdOrderByCreatedAtDesc(userId)
@@ -63,6 +65,7 @@ public class CommunityService {
         Map<Long, User> users = new HashMap<>();
         userRepository.findAllById(userIds).forEach(u -> users.put(u.getId(), u));
 
+        // 当前用户点过赞的帖子集合，用于标记 likedByMe
         Set<Long> likedPostIds = postLikeRepository.findByUserId(userId).stream()
                 .map(PostLike::getPostId)
                 .collect(Collectors.toSet());
@@ -72,6 +75,7 @@ public class CommunityService {
                 .toList();
     }
 
+    /** 点赞/取消点赞切换，并同步更新帖子点赞计数。 */
     @Transactional
     public CommunityDtos.LikeResult toggleLike(Long userId, Long postId) {
         Post post = postRepository.findById(postId)
@@ -94,6 +98,7 @@ public class CommunityService {
         return r;
     }
 
+    /** 发表评论：校验内容非空，落库后同步帖子评论计数。 */
     @Transactional
     public CommunityDtos.CommentResponse addComment(Long userId, Long postId, String content) {
         if (content == null || content.strip().isBlank()) {
@@ -114,6 +119,7 @@ public class CommunityService {
         return toCommentResponse(c, users.get(userId));
     }
 
+    /** 删除帖子：校验归属后级联删除其点赞与评论。 */
     @Transactional
     public void deletePost(Long userId, Long postId) {
         Post post = postRepository.findById(postId)
@@ -126,6 +132,7 @@ public class CommunityService {
         postRepository.delete(post);
     }
 
+    /** 删除评论：校验归属后删除，并回退帖子评论计数。 */
     @Transactional
     public void deleteComment(Long userId, Long commentId) {
         PostComment c = postCommentRepository.findById(commentId)
@@ -140,6 +147,7 @@ public class CommunityService {
         });
     }
 
+    /** 将帖子实体组装为响应 DTO，补充作者信息与评论列表。 */
     private CommunityDtos.PostResponse toResponse(Post p, Map<Long, User> users,
                                                   List<PostComment> comments, boolean likedByMe) {
         User author = users.get(p.getUserId());
@@ -162,6 +170,7 @@ public class CommunityService {
         return r;
     }
 
+    /** 将评论实体组装为响应 DTO，补充作者信息。 */
     private CommunityDtos.CommentResponse toCommentResponse(PostComment c, User author) {
         CommunityDtos.CommentResponse r = new CommunityDtos.CommentResponse();
         r.setId(c.getId());
@@ -174,6 +183,7 @@ public class CommunityService {
         return r;
     }
 
+    /** 计算作者展示名：昵称为空时回退用户名，用户不存在时显示"用户+ID"。 */
     private String authorName(User u, Long fallbackId) {
         if (u == null) {
             return "用户" + fallbackId;

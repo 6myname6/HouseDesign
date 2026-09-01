@@ -52,11 +52,13 @@ public class ZhipuImageService implements ImageTo3DService {
             new RoomSpec(3, "卫生间", List.of(0, 2))
     );
 
+    /** provider 标识。 */
     @Override
     public String provider() {
         return "zhipu";
     }
 
+    /** 生成多房间写实效果图：逐房间调 cogview 文生图并落盘，组装 photo-tour 场景配置。 */
     @Override
     public GenerationOutput generate(GenerationContext ctx) throws Exception {
         AppProperties.Ai ai = appProperties.getAi();
@@ -206,6 +208,7 @@ public class ZhipuImageService implements ImageTo3DService {
         throw new IllegalStateException("下载智谱图片失败（重试次数用尽）");
     }
 
+    /** 安全提取响应体文本（出错时返回空串）。 */
     private static String safeBody(WebClientResponseException e) {
         try {
             return e.getResponseBodyAsString();
@@ -214,6 +217,7 @@ public class ZhipuImageService implements ImageTo3DService {
         }
     }
 
+    /** 静默休眠指定毫秒，不打断线程中断状态。 */
     private static void sleepQuietly(long ms) {
         try {
             Thread.sleep(ms);
@@ -222,8 +226,8 @@ public class ZhipuImageService implements ImageTo3DService {
         }
     }
 
+    /** 构造文生图提示词：融合风格中文名、房间名与风格贴图描述。 */
     private String buildPrompt(DesignStyle style, String roomName) {
-
         return String.format(
                 "写实风格的室内装修效果图，%s的%s，%s，柔和自然采光，精致的家具与软装搭配，" +
                         "材质真实，细节丰富，标准单点透视，正常空间比例，墙面与地面比例自然协调，" +
@@ -231,5 +235,6 @@ public class ZhipuImageService implements ImageTo3DService {
                 style.getDisplayName(), roomName, style.getTexturePrompt());
     }
 
+    /** 房间规格：id、名称、相邻房间 id 列表。 */
     private record RoomSpec(int id, String name, List<Integer> connections) {}
 }

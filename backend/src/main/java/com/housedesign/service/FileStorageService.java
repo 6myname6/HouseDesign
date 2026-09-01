@@ -17,7 +17,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 /**
- * 本地文件存储服务。
+ * 本地文件存储服务：将上传文件/字节内容写入本地磁盘，并返回可访问 URL。
  */
 @Slf4j
 @Service
@@ -28,6 +28,7 @@ public class FileStorageService {
 
     private Path root;
 
+    /** 初始化：解析并创建存储根目录。 */
     @PostConstruct
     public void init() {
         this.root = Paths.get(appProperties.getStorage().getLocation()).toAbsolutePath().normalize();
@@ -43,7 +44,7 @@ public class FileStorageService {
      * 保存上传文件。
      *
      * @param subDir 子目录，如 "designs"
-     * @return 相对路径（相对 storage 根）
+     * @return 包含相对路径与公开 URL 的 StoredFile
      */
     public StoredFile store(MultipartFile file, String subDir) {
         if (file == null || file.isEmpty()) {
@@ -64,9 +65,7 @@ public class FileStorageService {
         return new StoredFile(relativePath, buildPublicUrl(relativePath));
     }
 
-    /**
-     * 写入字节内容（如生成的模型文件）。
-     */
+    /** 写入字节内容（如 AI 生成的模型文件），文件名随机以避免冲突。 */
     public StoredFile storeBytes(byte[] content, String subDir, String ext) {
         String filename = UUID.randomUUID().toString().replace("-", "") + ext;
         String relativePath = subDir + "/" + filename;
@@ -80,10 +79,12 @@ public class FileStorageService {
         return new StoredFile(relativePath, buildPublicUrl(relativePath));
     }
 
+    /** 将相对路径解析为实际文件系统的绝对路径。 */
     public Path resolve(String relativePath) {
         return root.resolve(relativePath).normalize();
     }
 
+    /** 基于配置的 publicBaseUrl 拼接出文件的可访问 URL。 */
     public String buildPublicUrl(String relativePath) {
         String base = appProperties.getStorage().getPublicBaseUrl();
         if (base.endsWith("/")) {
@@ -92,11 +93,13 @@ public class FileStorageService {
         return base + "/" + relativePath;
     }
 
+    /** 从原始文件名中提取扩展名（含点，小写），无扩展名返回空串。 */
     private String getExtension(String originalFilename) {
         String ext = StringUtils.getFilenameExtension(originalFilename);
         return ext == null ? "" : "." + ext.toLowerCase();
     }
 
+    /** 存储结果：记录相对路径与对外访问 URL。 */
     public record StoredFile(String relativePath, String url) {
     }
 }

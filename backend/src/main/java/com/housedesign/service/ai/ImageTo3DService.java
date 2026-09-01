@@ -6,7 +6,7 @@ package com.housedesign.service.ai;
  */
 public interface ImageTo3DService {
 
-    /** 该实现对应的 provider 标识 */
+    /** 该实现对应的 provider 标识。 */
     String provider();
 
     /**

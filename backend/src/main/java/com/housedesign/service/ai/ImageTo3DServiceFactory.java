@@ -19,6 +19,7 @@ public class ImageTo3DServiceFactory {
     private final ExternalImageTo3DService externalService;
     private final ZhipuImageService zhipuService;
 
+    /** 解析当前应使用的实现：mock 直接返回；zhipu 返回智谱；其余走通用外部实现；无 key 回退 mock。 */
     public ImageTo3DService resolve() {
         String provider = appProperties.getAi().getProvider();
         if (provider == null || provider.isBlank() || "mock".equalsIgnoreCase(provider)) {

@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * 内置降级实现：不依赖任何外部服务，根据设计图“分析”出一个程序化户型场景，
+ * 内置降级实现：不依赖任何外部服务，根据设计图"分析"出一个程序化户型场景，
  * 并按用户所选的装修风格套用对应的配色方案（墙 / 地板 / 木作 / 软装 / 点缀），
  * 前端使用 Three.js 依据 sceneConfig 渲染出可交互的 3D 施工效果。
  * 便于在未配置真实 AI Key 时，整条链路即开即用。
@@ -31,6 +31,7 @@ public class MockImageTo3DService implements ImageTo3DService {
         return "mock";
     }
 
+    /** 生成程序化户型场景：读取设计图作为随机种子，按风格配色组装房间与家具，输出 sceneConfig。 */
     @Override
     public GenerationOutput generate(GenerationContext context) throws Exception {
         // 用文件内容 hash 作为随机种子，保证同一张图结果稳定、不同图结果有差异
@@ -63,6 +64,7 @@ public class MockImageTo3DService implements ImageTo3DService {
                 .build();
     }
 
+    /** 组装完整场景：房间布局 + 家具摆放 + 配色，返回可序列化的 Map。 */
     private Map<String, Object> buildScene(Random rnd, DesignStyle style) {
         String wall = style.getWallColor();
         String floor = style.getFloorColor();
@@ -115,6 +117,7 @@ public class MockImageTo3DService implements ImageTo3DService {
         return scene;
     }
 
+    /** 构建配色板（墙/地/木/软装/点缀五色）。 */
     private Map<String, Object> palette(String wall, String floor, String wood, String fabric, String accent) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("wall", wall);
@@ -125,6 +128,7 @@ public class MockImageTo3DService implements ImageTo3DService {
         return m;
     }
 
+    /** 构造一个房间矩形（含位置、尺寸、墙地色）。 */
     private Map<String, Object> room(int id, String name, double x, double z, double w, double d,
                                      double h, String wallColor, String floorColor) {
         Map<String, Object> m = new LinkedHashMap<>();
@@ -152,6 +156,7 @@ public class MockImageTo3DService implements ImageTo3DService {
         }
     }
 
+    /** 判断两个房间矩形是否相邻（共边或间距在阈值内）。 */
     private boolean adjacent(Map<String, Object> a, Map<String, Object> b) {
         double ax = (Double) a.get("x"), az = (Double) a.get("z");
         double aw = (Double) a.get("width"), ad = (Double) a.get("depth");
@@ -165,6 +170,7 @@ public class MockImageTo3DService implements ImageTo3DService {
         return (xOverlap && zClose) || (zOverlap && xClose);
     }
 
+    /** 构造一件家具的占位描述（类型/所属房间/坐标/朝向/颜色）。 */
     private Map<String, Object> item(String type, String room, double x, double z, double rotation, String color) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("type", type);
@@ -176,6 +182,7 @@ public class MockImageTo3DService implements ImageTo3DService {
         return m;
     }
 
+    /** 坐标保留两位小数，便于前端解析。 */
     private double round(double v) {
         return Math.round(v * 100.0) / 100.0;
     }
@@ -196,6 +203,7 @@ public class MockImageTo3DService implements ImageTo3DService {
         }
     }
 
+    /** 解析 #rrggbb 为 RGB 三个分量。 */
     private int[] hex(String h) {
         String s = h.startsWith("#") ? h.substring(1) : h;
         return new int[]{
@@ -205,6 +213,7 @@ public class MockImageTo3DService implements ImageTo3DService {
         };
     }
 
+    /** 将颜色分量限制在 0-255 范围。 */
     private int clamp(int v) {
         return Math.max(0, Math.min(255, v));
     }

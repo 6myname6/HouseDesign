@@ -31,12 +31,13 @@ public class ExternalImageTo3DService implements ImageTo3DService {
     private final AppProperties appProperties;
     private final FileStorageService fileStorageService;
 
+    /** provider 标识：服务于所有非 mock 的 provider，统一标识为 external。 */
     @Override
     public String provider() {
-        // 该实现服务于所有非 mock 的 provider
         return "external";
     }
 
+    /** 执行一次外部图生3D：校验 key -> 图片转 data URI -> 创建任务 -> 轮询 -> 下载 glb 落地。 */
     @Override
     public GenerationOutput generate(GenerationContext context) throws Exception {
         AppProperties.Ai ai = appProperties.getAi();
